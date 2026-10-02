@@ -7,12 +7,18 @@ export function Home() {
 
   return (
     <main className="hero-bg relative z-10 flex min-h-screen flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
-        <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-hero-badge-border)] bg-[var(--color-hero-badge)] px-3 py-1 text-xs font-medium text-[var(--color-hero-text)]">
+      <div className="hero-bg__glow hero-bg__glow--one" />
+      <div className="hero-bg__glow hero-bg__glow--two" />
+      <div className="hero-bg__glow hero-bg__glow--three" />
+      <div className="hero-bg__grain" />
+      <div className="hero-bg__vignette" />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 text-center">
+        <span className="hero-pill mb-5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-[var(--color-hero-text)]">
           Runs in your browser. No sign-up.
         </span>
 
-        <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-[var(--color-hero-text)] sm:text-5xl md:text-6xl">
+        <h1 className="hero-headline max-w-3xl text-4xl sm:text-5xl md:text-6xl">
           Practice coding with an AI that sees your code
         </h1>
 
@@ -24,6 +30,7 @@ export function Home() {
           <Button
             variant="white"
             size="md"
+            pill
             onClick={() => navigate('/practice')}
           >
             Start now
@@ -31,6 +38,7 @@ export function Home() {
           <Button
             variant="secondary"
             size="md"
+            pill
             onClick={() => useAppStore.getState().setApiKeyModalOpen(true)}
           >
             Add API key

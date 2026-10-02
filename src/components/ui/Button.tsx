@@ -8,6 +8,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
   loading?: boolean
+  pill?: boolean
   children: ReactNode
 }
 
@@ -26,13 +27,14 @@ const variantClasses: Record<Variant, string> = {
 
 const sizeClasses: Record<Size, string> = {
   sm: 'px-2.5 py-1 text-xs',
-  md: 'px-3 py-1.5 text-sm',
+  md: 'px-4 py-2 text-sm',
 }
 
 export function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
+  pill = false,
   disabled,
   children,
   className = '',
@@ -42,7 +44,7 @@ export function Button({
     <button
       type="button"
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-1.5 rounded ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 ${pill ? 'rounded-full' : 'rounded'} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {loading && <Loader2 size={14} className="animate-spin" />}

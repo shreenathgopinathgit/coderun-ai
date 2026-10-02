@@ -39,7 +39,7 @@ export default function App() {
         onClose={() => setApiKeyModalOpen(false)}
       />
 
-      <main className={`flex-1 ${isHome ? '' : 'bg-[var(--color-bg)] text-[var(--color-text)]'}`}>
+      <main className={`flex-1 ${isHome ? 'hero-bg' : 'bg-[var(--color-bg)] text-[var(--color-text)]'}`}>
         <Routes />
       </main>
     </div>
