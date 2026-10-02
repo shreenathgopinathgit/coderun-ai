@@ -4,21 +4,12 @@ import { TopBar } from './components/TopBar'
 import { BurgerMenu } from './components/BurgerMenu'
 import { ApiKeyModal } from './components/ApiKeyModal'
 import { Home } from './pages/Home'
-
-function PracticePlaceholder() {
-  return (
-    <div className="flex flex-1 items-center justify-center px-4">
-      <p className="text-sm text-[var(--color-text-dim)]">
-        Practice page is built in Phase 2.
-      </p>
-    </div>
-  )
-}
+import { PracticePage } from './pages/PracticePage'
 
 function Routes() {
   return useRoutes([
     { path: '/', element: <Home /> },
-    { path: '/practice', element: <PracticePlaceholder /> },
+    { path: '/practice', element: <PracticePage /> },
   ])
 }
 

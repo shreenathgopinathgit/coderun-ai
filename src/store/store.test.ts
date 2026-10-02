@@ -76,4 +76,30 @@ describe('useAppStore', () => {
     expect(parsed.state.profiles).toHaveLength(1)
     expect(parsed.state.activeProfileId).toBe('p1')
   })
+
+  it('setCode stores code per question and per language', () => {
+    useAppStore.getState().setCode('q1', 'python', 'print(1)')
+    useAppStore.getState().setCode('q1', 'javascript', 'console.log(1)')
+    const s = useAppStore.getState()
+    expect(s.practice.codeByQuestion.q1.python).toBe('print(1)')
+    expect(s.practice.codeByQuestion.q1.javascript).toBe('console.log(1)')
+    // Switching language does not lose work in the other language.
+    expect(s.practice.codeByQuestion.q1.python).toBe('print(1)')
+  })
+
+  it('setCode keeps separate code per question', () => {
+    useAppStore.getState().setCode('q1', 'python', 'a')
+    useAppStore.getState().setCode('q2', 'python', 'b')
+    const s = useAppStore.getState()
+    expect(s.practice.codeByQuestion.q1.python).toBe('a')
+    expect(s.practice.codeByQuestion.q2.python).toBe('b')
+  })
+
+  it('setPaneSizes persists to localStorage', () => {
+    useAppStore.getState().setPaneSizes({ left: 30, right: 70 })
+    const raw = localStorage.getItem('codeforge-ai:state')
+    expect(raw).not.toBeNull()
+    const parsed = JSON.parse(raw as string)
+    expect(parsed.state.practice.paneSizes).toEqual({ left: 30, right: 70 })
+  })
 })

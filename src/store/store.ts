@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { APIProfile, AppState } from './types'
+import type { APIProfile, AppState, PracticeState } from './types'
 
 const LS_KEY = 'codeforge-ai:state'
 
@@ -8,15 +8,36 @@ const LS_KEY = 'codeforge-ai:state'
 export type PersistedState = {
   profiles: APIProfile[]
   activeProfileId: string | null
+  practice: PracticeState
 }
 
-const initialState: Omit<AppState, 'setProfiles' | 'upsertProfile' | 'deleteProfile' | 'setActiveProfile' | 'setBurgerMenuOpen' | 'setApiKeyModalOpen'> = {
+const defaultPractice: PracticeState = {
+  lastLanguage: 'python',
+  paneSizes: { left: 42, right: 58 },
+  editorHeight: { editor: 55, output: 45 },
+  codeByQuestion: {},
+}
+
+const initialState: Omit<
+  AppState,
+  | 'setProfiles'
+  | 'upsertProfile'
+  | 'deleteProfile'
+  | 'setActiveProfile'
+  | 'setBurgerMenuOpen'
+  | 'setApiKeyModalOpen'
+  | 'setLanguage'
+  | 'setPaneSizes'
+  | 'setEditorHeight'
+  | 'setCode'
+> = {
   profiles: [],
   activeProfileId: null,
   ui: {
     burgerMenuOpen: false,
     apiKeyModalOpen: false,
   },
+  practice: defaultPractice,
 }
 
 export const useAppStore = create<AppState>()(
@@ -52,6 +73,32 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ ui: { ...state.ui, burgerMenuOpen: open } })),
       setApiKeyModalOpen: (open) =>
         set((state) => ({ ui: { ...state.ui, apiKeyModalOpen: open } })),
+
+      setLanguage: (language) =>
+        set((state) => ({
+          practice: { ...state.practice, lastLanguage: language },
+        })),
+      setPaneSizes: (sizes) =>
+        set((state) => ({
+          practice: { ...state.practice, paneSizes: sizes },
+        })),
+      setEditorHeight: (height) =>
+        set((state) => ({
+          practice: { ...state.practice, editorHeight: height },
+        })),
+      setCode: (questionId, language, code) =>
+        set((state) => {
+          const byLang = state.practice.codeByQuestion[questionId] ?? {}
+          return {
+            practice: {
+              ...state.practice,
+              codeByQuestion: {
+                ...state.practice.codeByQuestion,
+                [questionId]: { ...byLang, [language]: code },
+              },
+            },
+          }
+        }),
     }),
     {
       name: LS_KEY,
@@ -59,6 +106,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state): PersistedState => ({
         profiles: state.profiles,
         activeProfileId: state.activeProfileId,
+        practice: state.practice,
       }),
     },
   ),
