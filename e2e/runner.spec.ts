@@ -76,6 +76,46 @@ test('infinite loop is terminated with Time Limit Exceeded', async ({ page }) =>
   expect(result.message).toBe('Time Limit Exceeded')
 })
 
+test('Python runner executes user code via Pyodide', async ({ page }) => {
+  await page.goto('/')
+  const result = await page.evaluate(async () => {
+    const { PyodideRunnerClient } = await import('/src/runner/pyClient.ts')
+    const client = new PyodideRunnerClient()
+    const r = await client.run({
+      code: 'def add(a, b):\n    return a + b',
+      functionName: 'add',
+      cases: [{ args: [2, 3], expected: 5 }, { args: [-1, 1], expected: 0 }],
+      language: 'python',
+      timeoutMs: 5000,
+    })
+    client.dispose()
+    return r
+  })
+  expect(result.cases[0].passed).toBe(true)
+  expect(result.cases[0].actual).toBe(5)
+  expect(result.cases[1].passed).toBe(true)
+  expect(result.cases[1].actual).toBe(0)
+}, 60000)
+
+test('Python runner captures print output', async ({ page }) => {
+  await page.goto('/')
+  const result = await page.evaluate(async () => {
+    const { PyodideRunnerClient } = await import('/src/runner/pyClient.ts')
+    const client = new PyodideRunnerClient()
+    const r = await client.run({
+      code: 'def greet(name):\n    print("hello " + name)\n    return name',
+      functionName: 'greet',
+      cases: [{ args: ['world'], expected: 'world' }],
+      language: 'python',
+      timeoutMs: 5000,
+    })
+    client.dispose()
+    return r
+  })
+  expect(result.consoleOutput).toContain('hello world')
+  expect(result.cases[0].passed).toBe(true)
+}, 60000)
+
 test('hidden cases expose only pass/fail', async ({ page }) => {
   await page.goto('/')
   const result = await page.evaluate(async () => {
