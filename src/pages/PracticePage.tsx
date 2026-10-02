@@ -1,30 +1,18 @@
 import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
 import { useAppStore } from '../store/store'
+import { PracticeTopBar } from '../components/practice/PracticeTopBar'
 import { LeftPane } from '../components/practice/LeftPane'
 import { Toolbar } from '../components/practice/Toolbar'
 import { CodeEditor } from '../components/practice/CodeEditor'
 import { OutputPanel } from '../components/practice/OutputPanel'
 import { starterCode } from '../components/practice/starterCode'
-import type { EditorHeight, PaneSizes } from '../store/types'
 
 /** Fixed scratch id used for code while no questions exist yet. */
 const SCRATCH_ID = '__scratch__'
-
 const MIN_PANE = 25
+const CARD_RADIUS = '16px'
 
-function toPaneSizes(layout: Layout, fallback: PaneSizes): PaneSizes {
-  return {
-    left: layout.left ?? fallback.left,
-    right: layout.right ?? fallback.right,
-  }
-}
-
-function toEditorHeight(layout: Layout, fallback: EditorHeight): EditorHeight {
-  return {
-    editor: layout.editor ?? fallback.editor,
-    output: layout.output ?? fallback.output,
-  }
-}
+const noop = () => undefined
 
 export function PracticePage() {
   const { paneSizes, editorHeight, lastLanguage, codeByQuestion } =
@@ -33,67 +21,81 @@ export function PracticePage() {
   const setEditorHeight = useAppStore((s) => s.setEditorHeight)
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setCode = useAppStore((s) => s.setCode)
+  const code = codeByQuestion[SCRATCH_ID]?.[lastLanguage] ?? starterCode[lastLanguage]
 
-  const code =
-    codeByQuestion[SCRATCH_ID]?.[lastLanguage] ?? starterCode[lastLanguage]
+  const onH = (layout: Layout) =>
+    setPaneSizes({
+      left: layout.left ?? paneSizes.left,
+      right: layout.right ?? paneSizes.right,
+    })
+  const onV = (layout: Layout) =>
+    setEditorHeight({
+      editor: layout.editor ?? editorHeight.editor,
+      output: layout.output ?? editorHeight.output,
+    })
 
   return (
-    <div className="h-[calc(100vh-41px)] bg-[var(--color-bg)] text-[var(--color-text)]">
-      <Group
-        orientation="horizontal"
-        defaultLayout={{ left: paneSizes.left, right: paneSizes.right }}
-        onLayoutChanged={(layout) => setPaneSizes(toPaneSizes(layout, paneSizes))}
-      >
-        <Panel id="left" minSize={MIN_PANE} className="flex flex-col">
-          <LeftPane />
-        </Panel>
-        <Separator className="h-full w-1 bg-[var(--color-border)] hover:bg-[var(--color-accent)]" />
-        <Panel id="right" minSize={MIN_PANE} className="flex flex-col">
-          <Toolbar
-            language={lastLanguage}
-            onLanguageChange={setLanguage}
-            onRun={() => {
-              /* Code runner is built in Phase 3. */
-            }}
-            onSubmit={() => {
-              /* Test runner is built in Phase 3. */
-            }}
-            onReset={() => setCode(SCRATCH_ID, lastLanguage, starterCode[lastLanguage])}
-            onAddLibrary={() => {
-              /* Library loader is built in Phase 4. */
-            }}
-          />
-
-          <Group
-            orientation="vertical"
-            defaultLayout={{ editor: editorHeight.editor, output: editorHeight.output }}
-            onLayoutChanged={(layout) =>
-              setEditorHeight(toEditorHeight(layout, editorHeight))
-            }
+    <div className="relative h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+      <PracticeTopBar />
+      <div className="absolute left-4 right-4 bottom-4 top-14">
+        <Group
+          orientation="horizontal"
+          defaultLayout={{ left: paneSizes.left, right: paneSizes.right }}
+          onLayoutChanged={onH}
+        >
+          <Panel id="left" minSize={MIN_PANE} className="flex flex-col">
+            <div
+              className="h-full flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3"
+              style={{ borderRadius: CARD_RADIUS }}
+            >
+              <LeftPane />
+            </div>
+          </Panel>
+          <Separator
+            id="pane-divider"
+            className="flex w-2 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)]"
           >
-            <Panel id="editor" minSize={MIN_PANE}>
-              <CodeEditor
+            <div className="h-6 w-1 rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)]" />
+          </Separator>
+          <Panel id="right" minSize={MIN_PANE} className="flex flex-col">
+            <div
+              className="h-full flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3"
+              style={{ borderRadius: CARD_RADIUS }}
+            >
+              <Toolbar
                 language={lastLanguage}
-                code={code}
-                onRun={() => {
-                  /* Code runner is built in Phase 3. */
-                }}
-                onChange={(value) => setCode(SCRATCH_ID, lastLanguage, value)}
+                onLanguageChange={setLanguage}
+                onRun={noop}
+                onSubmit={noop}
+                onReset={() => setCode(SCRATCH_ID, lastLanguage, starterCode[lastLanguage])}
+                onAddLibrary={noop}
               />
-            </Panel>
-            <Separator className="h-1 w-full bg-[var(--color-border)] hover:bg-[var(--color-accent)]" />
-            <Panel id="output" minSize={MIN_PANE}>
-              <OutputPanel
-                consoleOutput=""
-                testResults=""
-                onClear={() => {
-                  /* Output is captured by the runner in Phase 3. */
-                }}
-              />
-            </Panel>
-          </Group>
-        </Panel>
-      </Group>
+              <div className="flex-1 overflow-hidden">
+                <Group
+                  orientation="vertical"
+                  defaultLayout={{ editor: editorHeight.editor, output: editorHeight.output }}
+                  onLayoutChanged={onV}
+                >
+                  <Panel id="editor" minSize={MIN_PANE} className="flex flex-col">
+                    <CodeEditor
+                      language={lastLanguage}
+                      code={code}
+                      onRun={noop}
+                      onChange={(value) => setCode(SCRATCH_ID, lastLanguage, value)}
+                    />
+                  </Panel>
+                  <Separator className="flex h-1 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)]">
+                    <div className="h-1 w-full max-w-[60px] rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)]" />
+                  </Separator>
+                  <Panel id="output" minSize={MIN_PANE} className="flex flex-col">
+                    <OutputPanel consoleOutput="" testResults="" onClear={noop} />
+                  </Panel>
+                </Group>
+              </div>
+            </div>
+          </Panel>
+        </Group>
+      </div>
     </div>
   )
 }

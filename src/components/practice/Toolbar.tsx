@@ -49,7 +49,8 @@ export function Toolbar({
         variant="primary"
         size="sm"
         onClick={onRun}
-        title="Run the current code (Ctrl/Cmd+Enter)"
+        disabled
+        title="Available after the code runner is built"
       >
         <Play size={14} />
         Run

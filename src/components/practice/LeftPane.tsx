@@ -58,7 +58,7 @@ export function LeftPane() {
           <EmptyState
             icon={HelpCircle}
             title="Chat arrives in a later phase"
-            description="Add an API key first. Then ask questions, debug code, and generate practice questions — all coming soon."
+            description="Add an API key first. Ask questions, debug code, and generate practice questions in a later phase."
           />
         ) : (
           <EmptyState
