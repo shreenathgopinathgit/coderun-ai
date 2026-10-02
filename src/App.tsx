@@ -21,7 +21,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <TopBar />
+      {isHome && <TopBar />}
 
       <BurgerMenu />
 
@@ -30,7 +30,7 @@ export default function App() {
         onClose={() => setApiKeyModalOpen(false)}
       />
 
-      <main className={`flex-1 ${isHome ? 'hero-bg' : 'bg-[var(--color-bg)] text-[var(--color-text)]'}`}>
+      <main className="flex-1">
         <Routes />
       </main>
     </div>

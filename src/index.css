@@ -139,7 +139,6 @@
     transparent 0.5deg 1.5deg
   );
   background-size: 20px 20px;
-  animation: heroGrain 6s steps(12, end) infinite;
   pointer-events: none;
 }
 
@@ -148,6 +147,32 @@
   inset: 0;
   background: radial-gradient(100% 100% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
   pointer-events: none;
+}
+
+/* Practice page cards and divider handles. */
+.card {
+  @apply h-full flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3;
+}
+
+.divider-horizontal {
+  @apply flex w-2 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)];
+}
+.divider-vertical {
+  @apply flex h-1 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)];
+}
+.handle-vertical {
+  @apply h-6 w-1 rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)];
+}
+.handle-horizontal {
+  @apply h-1 w-full max-w-[60px] rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)];
+}
+
+/* Dimmer variant used behind the practice page so the cards stay readable. */
+.hero-bg--dim .hero-bg__glow {
+  opacity: 0.72;
+}
+.hero-bg--dim .hero-bg__grain {
+  opacity: 0.08;
 }
 
 @keyframes heroGlowOne {
@@ -180,15 +205,6 @@
   100% {
     transform: translate(5vmin, 6vmin) scale(1.16);
     opacity: 1;
-  }
-}
-
-@keyframes heroGrain {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 160px 160px;
   }
 }
 

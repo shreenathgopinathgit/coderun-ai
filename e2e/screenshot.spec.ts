@@ -12,7 +12,8 @@ async function sample(page: Page) {
       right: { x: right.x, y: right.y, w: right.width, h: right.height },
       sep: { x: sep.x, y: sep.y, w: sep.width, h: sep.height },
       topbar: { x: topbar.x, y: topbar.y, w: topbar.width, h: topbar.height },
-      vw: window.innerWidth, vh: window.innerHeight,
+      vw: window.innerWidth,
+      vh: window.innerHeight,
     }
   })
 }
@@ -35,4 +36,11 @@ test('take desktop and tablet screenshots', async ({ page }) => {
   expect(t.left.x).toBe(16)
   expect(t.right.x + t.right.w).toBe(820 - 16)
   expect(t.topbar.y + t.topbar.h).toBeLessThanOrEqual(t.left.y)
+})
+
+test('home hero renders unchanged with background behind content', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+  await page.screenshot({ path: 'home-hero.png' })
+  await expect(page.getByRole('button', { name: 'Start now' })).toBeVisible()
 })

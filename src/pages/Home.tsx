@@ -1,19 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/store'
 import { Button } from '../components/ui/Button'
+import { HeroBackground } from '../components/hero/HeroBackground'
 
 export function Home() {
   const navigate = useNavigate()
 
   return (
-    <main className="hero-bg relative z-10 flex min-h-screen flex-col">
-      <div className="hero-bg__glow hero-bg__glow--one" />
-      <div className="hero-bg__glow hero-bg__glow--two" />
-      <div className="hero-bg__glow hero-bg__glow--three" />
-      <div className="hero-bg__grain" />
-      <div className="hero-bg__vignette" />
-
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 text-center">
+    <HeroBackground>
+      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center">
         <span className="hero-pill mb-5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-[var(--color-hero-text)]">
           Runs in your browser. No sign-up.
         </span>
@@ -44,7 +39,7 @@ export function Home() {
             Add API key
           </Button>
         </div>
-      </div>
-    </main>
+      </main>
+    </HeroBackground>
   )
 }

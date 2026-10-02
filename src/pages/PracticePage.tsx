@@ -1,5 +1,6 @@
 import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
 import { useAppStore } from '../store/store'
+import { HeroBackground } from '../components/hero/HeroBackground'
 import { PracticeTopBar } from '../components/practice/PracticeTopBar'
 import { LeftPane } from '../components/practice/LeftPane'
 import { Toolbar } from '../components/practice/Toolbar'
@@ -35,66 +36,60 @@ export function PracticePage() {
     })
 
   return (
-    <div className="relative h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-      <PracticeTopBar />
-      <div className="absolute left-4 right-4 bottom-4 top-14">
-        <Group
-          orientation="horizontal"
-          defaultLayout={{ left: paneSizes.left, right: paneSizes.right }}
-          onLayoutChanged={onH}
-        >
-          <Panel id="left" minSize={MIN_PANE} className="flex flex-col">
-            <div
-              className="h-full flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3"
-              style={{ borderRadius: CARD_RADIUS }}
-            >
-              <LeftPane />
-            </div>
-          </Panel>
-          <Separator
-            id="pane-divider"
-            className="flex w-2 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)]"
+    <div className="relative h-screen text-[var(--color-text)]">
+      <HeroBackground dim />
+      <div className="relative z-10 flex h-full flex-col">
+        <PracticeTopBar />
+        <div className="absolute left-4 right-4 bottom-4 top-14">
+          <Group
+            orientation="horizontal"
+            defaultLayout={{ left: paneSizes.left, right: paneSizes.right }}
+            onLayoutChanged={onH}
           >
-            <div className="h-6 w-1 rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)]" />
-          </Separator>
-          <Panel id="right" minSize={MIN_PANE} className="flex flex-col">
-            <div
-              className="h-full flex flex-col overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3"
-              style={{ borderRadius: CARD_RADIUS }}
-            >
-              <Toolbar
-                language={lastLanguage}
-                onLanguageChange={setLanguage}
-                onRun={noop}
-                onSubmit={noop}
-                onReset={() => setCode(SCRATCH_ID, lastLanguage, starterCode[lastLanguage])}
-                onAddLibrary={noop}
-              />
-              <div className="flex-1 overflow-hidden">
-                <Group
-                  orientation="vertical"
-                  defaultLayout={{ editor: editorHeight.editor, output: editorHeight.output }}
-                  onLayoutChanged={onV}
-                >
-                  <Panel id="editor" minSize={MIN_PANE} className="flex flex-col">
-                    <CodeEditor
-                      language={lastLanguage}
-                      code={code}
-                      onRun={noop}
-                      onChange={(value) => setCode(SCRATCH_ID, lastLanguage, value)}
-                    />
-                  </Panel>
-                  <Separator className="flex h-1 items-center justify-center bg-transparent hover:bg-[var(--color-border)] focus-visible:bg-[var(--color-accent)]">
-                    <div className="h-1 w-full max-w-[60px] rounded-full bg-[var(--color-border)] transition-colors group-data-[separator=active]:bg-[var(--color-accent)] group-data-[separator=focus]:bg-[var(--color-accent)]" />
-                  </Separator>
-                  <Panel id="output" minSize={MIN_PANE} className="flex flex-col">
-                    <OutputPanel consoleOutput="" testResults="" onClear={noop} />
-                  </Panel>
-                </Group>
+            <Panel id="left" minSize={MIN_PANE} className="flex flex-col">
+              <div className="card" style={{ borderRadius: CARD_RADIUS }}>
+                <LeftPane />
               </div>
-            </div>
-          </Panel>
-        </Group>
+            </Panel>
+            <Separator id="pane-divider" className="divider-horizontal">
+              <div className="handle-vertical" />
+            </Separator>
+            <Panel id="right" minSize={MIN_PANE} className="flex flex-col">
+              <div className="card" style={{ borderRadius: CARD_RADIUS }}>
+                <Toolbar
+                  language={lastLanguage}
+                  onLanguageChange={setLanguage}
+                  onRun={noop}
+                  onSubmit={noop}
+                  onReset={() => setCode(SCRATCH_ID, lastLanguage, starterCode[lastLanguage])}
+                  onAddLibrary={noop}
+                />
+                <div className="flex-1 overflow-hidden">
+                  <Group
+                    orientation="vertical"
+                    defaultLayout={{ editor: editorHeight.editor, output: editorHeight.output }}
+                    onLayoutChanged={onV}
+                  >
+                    <Panel id="editor" minSize={MIN_PANE} className="flex flex-col">
+                      <CodeEditor
+                        language={lastLanguage}
+                        code={code}
+                        onRun={noop}
+                        onChange={(value) => setCode(SCRATCH_ID, lastLanguage, value)}
+                      />
+                    </Panel>
+                    <Separator className="divider-vertical">
+                      <div className="handle-horizontal" />
+                    </Separator>
+                    <Panel id="output" minSize={MIN_PANE} className="flex flex-col">
+                      <OutputPanel consoleOutput="" testResults="" onClear={noop} />
+                    </Panel>
+                  </Group>
+                </div>
+              </div>
+            </Panel>
+          </Group>
+        </div>
       </div>
     </div>
   )
