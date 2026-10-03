@@ -55,22 +55,37 @@ async function runRequest(request: RunRequest): Promise<RunResult> {
     }
 
     const cases: CaseResult[] = []
-    for (const tc of request.cases) {
+    if (request.cases.length === 0) {
+      // No question loaded yet: run the function once so console output and
+      // runtime errors are still captured and reported.
       const caseStart = performance.now()
       let actual: unknown
       let error: string | undefined
       try {
-        actual = await Reflect.apply(fn, null, tc.args as unknown[])
+        actual = await Reflect.apply(fn, null, [])
       } catch (e) {
         error = e instanceof Error ? e.message : String(e)
       }
       const timeMs = Math.round(performance.now() - caseStart)
-      const passed = !error && deepEqual(actual, tc.expected)
-      cases.push(
-        tc.hidden
-          ? { passed, timeMs, hidden: true }
-          : { passed, actual, error, timeMs, hidden: false },
-      )
+      cases.push({ passed: false, actual, error, timeMs, hidden: false })
+    } else {
+      for (const tc of request.cases) {
+        const caseStart = performance.now()
+        let actual: unknown
+        let error: string | undefined
+        try {
+          actual = await Reflect.apply(fn, null, tc.args as unknown[])
+        } catch (e) {
+          error = e instanceof Error ? e.message : String(e)
+        }
+        const timeMs = Math.round(performance.now() - caseStart)
+        const passed = !error && deepEqual(actual, tc.expected)
+        cases.push(
+          tc.hidden
+            ? { passed, timeMs, hidden: true }
+            : { passed, actual, error, timeMs, hidden: false },
+        )
+      }
     }
 
     return {

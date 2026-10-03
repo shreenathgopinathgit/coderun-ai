@@ -37,8 +37,19 @@ export interface RunRequest<T = unknown> {
   /** Hard timeout in milliseconds. */
   timeoutMs?: number
   /** Language of the code being run. */
-  language: 'javascript' | 'typescript'
+  language: RunnerLanguage
 }
+
+/** Languages the app can run. Stub languages have no executor yet. */
+export type RunnerLanguage =
+  | 'python'
+  | 'javascript'
+  | 'typescript'
+  | 'java'
+  | 'c'
+  | 'cpp'
+  | 'go'
+  | 'rust'
 
 /** A sentinel returned when a run exceeds the time limit. */
 export const TIME_LIMIT_EXCEEDED = 'Time Limit Exceeded'
@@ -49,4 +60,10 @@ export const TIME_LIMIT_EXCEEDED = 'Time Limit Exceeded'
  */
 export interface Runner {
   run(request: RunRequest): Promise<RunResult>
+  /** True while the runner is still loading its runtime (e.g. Pyodide). */
+  isLoading?: boolean
+  /** The last load error, if the runtime could not be loaded. */
+  lastLoadError?: string | null
+  /** Terminate the current worker, if any. */
+  stop(): void
 }

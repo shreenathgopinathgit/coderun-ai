@@ -6,7 +6,15 @@ export type ProviderPreset =
   | 'mistral'
   | 'custom'
 
-export type Language = 'python' | 'javascript' | 'typescript'
+export type Language =
+  | 'python'
+  | 'javascript'
+  | 'typescript'
+  | 'java'
+  | 'c'
+  | 'cpp'
+  | 'go'
+  | 'rust'
 
 export interface APIProfile {
   id: string

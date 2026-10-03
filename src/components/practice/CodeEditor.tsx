@@ -14,6 +14,11 @@ const monacoLanguage: Record<Language, string> = {
   python: 'python',
   javascript: 'javascript',
   typescript: 'typescript',
+  java: 'java',
+  c: 'cpp',
+  cpp: 'cpp',
+  go: 'go',
+  rust: 'rust',
 }
 
 const editorOptions: Monaco.editor.IStandaloneEditorConstructionOptions = {
@@ -76,23 +81,25 @@ export function CodeEditor({ language, code, onRun, onChange }: CodeEditorProps)
   }, [])
 
   return (
-    <Editor
-      height="100%"
-      width="100%"
-      language={monacoLanguage[language]}
-      theme="vs-dark"
-      value={code}
-      beforeMount={(monaco) => {
-        monaco.editor.setTheme('vs-dark')
-      }}
-      onMount={handleMount}
-      onChange={(value) => onChange(value ?? '')}
-      options={editorOptions}
-      loading={
-        <div className="flex h-full items-center justify-center text-xs text-[var(--color-text-dim)]">
-          Loading editor…
-        </div>
-      }
-    />
+    <div data-testid="editor" className="flex-1">
+      <Editor
+        height="100%"
+        width="100%"
+        language={monacoLanguage[language]}
+        theme="vs-dark"
+        value={code}
+        beforeMount={(monaco) => {
+          monaco.editor.setTheme('vs-dark')
+        }}
+        onMount={handleMount}
+        onChange={(value) => onChange(value ?? '')}
+        options={editorOptions}
+        loading={
+          <div className="flex h-full items-center justify-center text-xs text-[var(--color-text-dim)]">
+            Loading editor…
+          </div>
+        }
+      />
+    </div>
   )
 }

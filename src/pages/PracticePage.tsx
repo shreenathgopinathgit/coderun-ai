@@ -6,6 +6,7 @@ import { LeftPane } from '../components/practice/LeftPane'
 import { Toolbar } from '../components/practice/Toolbar'
 import { CodeEditor } from '../components/practice/CodeEditor'
 import { OutputPanel } from '../components/practice/OutputPanel'
+import { useRunner } from '../runner/useRunner'
 import { starterCode } from '../components/practice/starterCode'
 
 /** Fixed scratch id used for code while no questions exist yet. */
@@ -13,7 +14,8 @@ const SCRATCH_ID = '__scratch__'
 const MIN_PANE = 25
 const CARD_RADIUS = '16px'
 
-const noop = () => undefined
+/** Languages without a configured executor. */
+const STUB_LANGUAGES = new Set(['java', 'c', 'cpp', 'go', 'rust'])
 
 export function PracticePage() {
   const { paneSizes, editorHeight, lastLanguage, codeByQuestion } =
@@ -23,6 +25,44 @@ export function PracticePage() {
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setCode = useAppStore((s) => s.setCode)
   const code = codeByQuestion[SCRATCH_ID]?.[lastLanguage] ?? starterCode[lastLanguage]
+
+  const { state, run, stop, clear, report } = useRunner()
+  const isStub = STUB_LANGUAGES.has(lastLanguage)
+
+  const NO_EXECUTOR =
+    'No executor is configured for this language. Configure a Judge0 or Piston compatible endpoint in settings.'
+
+  const runCode = (): void => {
+    if (state.loading) return
+    // Stub languages have no executor: show the honest message in the
+    // Console tab instead of silently doing nothing.
+    if (isStub) {
+      report(NO_EXECUTOR)
+      return
+    }
+    run({
+      code,
+      functionName: 'main',
+      cases: [],
+      language: lastLanguage as 'python' | 'javascript' | 'typescript',
+    })
+  }
+
+  const submitCode = (): void => {
+    if (state.loading) return
+    if (isStub) {
+      report(NO_EXECUTOR)
+      return
+    }
+    run({
+      code,
+      functionName: 'main',
+      cases: [],
+      language: lastLanguage as 'python' | 'javascript' | 'typescript',
+    })
+  }
+
+  const onRunStop = (): void => stop(lastLanguage as 'python' | 'javascript' | 'typescript')
 
   const onH = (layout: Layout) =>
     setPaneSizes({
@@ -59,10 +99,24 @@ export function PracticePage() {
                 <Toolbar
                   language={lastLanguage}
                   onLanguageChange={setLanguage}
-                  onRun={noop}
-                  onSubmit={noop}
+                  onRun={runCode}
+                  onRunStop={onRunStop}
+                  onSubmit={submitCode}
                   onReset={() => setCode(SCRATCH_ID, lastLanguage, starterCode[lastLanguage])}
-                  onAddLibrary={noop}
+                  onAddLibrary={() => undefined}
+                  disabled={state.loading}
+                  stopDisabled={isStub}
+                  stopTitle={
+                    isStub
+                      ? 'No executor is configured for this language. Configure a Judge0 or Piston compatible endpoint in settings.'
+                      : undefined
+                  }
+                  submitDisabled={isStub || state.loading}
+                  submitTitle={
+                    isStub
+                      ? NO_EXECUTOR
+                      : 'Needs a question with test cases'
+                  }
                 />
                 <div className="flex-1 overflow-hidden">
                   <Group
@@ -74,7 +128,7 @@ export function PracticePage() {
                       <CodeEditor
                         language={lastLanguage}
                         code={code}
-                        onRun={noop}
+                        onRun={runCode}
                         onChange={(value) => setCode(SCRATCH_ID, lastLanguage, value)}
                       />
                     </Panel>
@@ -82,7 +136,14 @@ export function PracticePage() {
                       <div className="handle-horizontal" />
                     </Separator>
                     <Panel id="output" minSize={MIN_PANE} className="flex flex-col">
-                      <OutputPanel consoleOutput="" testResults="" onClear={noop} />
+                      <OutputPanel
+                        result={state.result}
+                        error={state.error}
+                        timedOut={state.timedOut}
+                        pyLoading={state.pyLoading}
+                        pyError={state.pyError}
+                        onClear={clear}
+                      />
                     </Panel>
                   </Group>
                 </div>

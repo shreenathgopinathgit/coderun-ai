@@ -88,6 +88,11 @@ export class WorkerClient {
     this.terminate()
     this.pending.clear()
   }
+
+  /** Terminate the current worker, if any. */
+  stop(): void {
+    this.terminate()
+  }
 }
 
 /** Client for the JS/TS runner worker. */

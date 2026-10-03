@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
+import type { CaseResult, RunResult } from '../../runner/types'
 
 export interface OutputPanelProps {
-  consoleOutput: string
-  testResults: string
+  result: RunResult | null
+  error: string | null
+  timedOut: boolean
+  pyLoading: boolean
+  pyError: string | null
   onClear: () => void
 }
 
@@ -43,16 +47,78 @@ function TabBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   )
 }
 
-function TabPanel({ tab, consoleOutput, testResults }: { tab: Tab; consoleOutput: string; testResults: string }) {
-  const content = tab === 'console' ? consoleOutput : testResults
-  return (
-    <pre className="h-full text-xs font-mono whitespace-pre-wrap break-words text-[var(--color-text-dim)]">
-      {content || EMPTY[tab]}
+function ConsoleTab({ result, error, timedOut, pyLoading, pyError }: {
+  result: RunResult | null
+  error: string | null
+  timedOut: boolean
+  pyLoading: boolean
+  pyError: string | null
+}) {
+  if (pyLoading) {
+    return <p className="text-xs font-mono text-[var(--color-text-dim)]">Loading Python runtime…</p>
+  }
+  if (pyError) {
+    return <p className="text-xs font-mono text-[var(--color-error)]">{pyError}</p>
+  }
+  if (timedOut) {
+    return <p className="text-xs font-mono text-[var(--color-warning)]">Time Limit Exceeded</p>
+  }
+  if (error) {
+    return <pre className="text-xs font-mono whitespace-pre-wrap text-[var(--color-error)]">{error}</pre>
+  }
+  const lines = result?.consoleOutput ?? []
+  return lines.length ? (
+    <pre className="text-xs font-mono whitespace-pre-wrap text-[var(--color-text-dim)]">
+      {lines.join('\n')}
     </pre>
+  ) : (
+    <p className="text-xs font-mono text-[var(--color-text-dim)]">{EMPTY.console}</p>
   )
 }
 
-export function OutputPanel({ consoleOutput, testResults, onClear }: OutputPanelProps) {
+function ResultsTab({ result }: { result: RunResult | null }) {
+  if (!result || result.cases.length === 0) {
+    return <p className="text-xs font-mono text-[var(--color-text-dim)]">{EMPTY.results}</p>
+  }
+  return (
+    <div className="space-y-2 text-xs font-mono">
+      <div className="flex justify-between text-[var(--color-text-dim)]">
+        <span>{result.cases.length} case(s)</span>
+        <span>{result.cases.filter((c) => c.passed).length} passed</span>
+        <span>{result.timeMs} ms</span>
+      </div>
+      {result.cases.map((c: CaseResult, i: number) => (
+        <div
+          key={i}
+          className={`rounded border px-2 py-1 ${
+            c.passed
+              ? 'border-[var(--color-success)]/40 text-[var(--color-success)]'
+              : 'border-[var(--color-error)]/40 text-[var(--color-error)]'
+          }`}
+        >
+          <span className="font-semibold">{c.passed ? '✓' : '✗'}</span>
+          {' case '}
+          {i + 1}
+          {c.error ? `: ${c.error}` : ''}
+          {!c.passed && c.actual !== undefined && (
+            <span className="ml-2">
+              actual: {JSON.stringify(c.actual)}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function OutputPanel({
+  result,
+  error,
+  timedOut,
+  pyLoading,
+  pyError,
+  onClear,
+}: OutputPanelProps) {
   const [popoutOpen, setPopoutOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('console')
 
@@ -61,7 +127,17 @@ export function OutputPanel({ consoleOutput, testResults, onClear }: OutputPanel
       <div className="flex h-full flex-col border-t border-[var(--color-border)]">
         <TabBar tab={tab} setTab={setTab} />
         <div className="flex-1 overflow-auto p-4">
-          <TabPanel tab={tab} consoleOutput={consoleOutput} testResults={testResults} />
+          {tab === 'console' ? (
+            <ConsoleTab
+              result={result}
+              error={error}
+              timedOut={timedOut}
+              pyLoading={pyLoading}
+              pyError={pyError}
+            />
+          ) : (
+            <ResultsTab result={result} />
+          )}
         </div>
         <div className="flex h-10 items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4">
           <Button variant="ghost" size="sm" onClick={onClear}>
@@ -82,7 +158,17 @@ export function OutputPanel({ consoleOutput, testResults, onClear }: OutputPanel
         <div className="flex h-[70vh] flex-col">
           <TabBar tab={tab} setTab={setTab} />
           <div className="flex-1 overflow-auto p-4">
-            <TabPanel tab={tab} consoleOutput={consoleOutput} testResults={testResults} />
+            {tab === 'console' ? (
+              <ConsoleTab
+                result={result}
+                error={error}
+                timedOut={timedOut}
+                pyLoading={pyLoading}
+                pyError={pyError}
+              />
+            ) : (
+              <ResultsTab result={result} />
+            )}
           </div>
           <div className="flex h-10 items-center justify-end border-t border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-4">
             <Button variant="ghost" size="sm" onClick={onClear}>

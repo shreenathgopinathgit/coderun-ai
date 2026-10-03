@@ -36,6 +36,32 @@ async function runRequest(request: RunRequest): Promise<RunResult> {
 
   const start = performance.now()
   try {
+    if (request.cases.length === 0) {
+      // No question loaded yet: execute the editor code directly so
+      // top-level print() output and runtime errors are still captured.
+      const caseStart = performance.now()
+      let actual: unknown
+      let error: string | undefined
+      try {
+        actual = py.runPython(request.code)
+      } catch (e) {
+        error = e instanceof Error ? e.message : String(e)
+      }
+      return {
+        cases: [
+          {
+            passed: false,
+            actual,
+            error,
+            timeMs: Math.round(performance.now() - caseStart),
+            hidden: false,
+          },
+        ],
+        consoleOutput: lines,
+        timeMs: Math.round(performance.now() - start),
+      }
+    }
+
     py.runPython(request.code)
     py.globals.set('_cases_json', JSON.stringify(request.cases))
     py.globals.set('_fnName', request.functionName)

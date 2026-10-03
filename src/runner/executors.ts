@@ -13,6 +13,10 @@ class StubRunner implements Runner {
       timeMs: 0,
     }
   }
+
+  stop(): void {
+    // No worker to terminate.
+  }
 }
 
 /**
@@ -29,6 +33,12 @@ export const runners: Record<string, Runner> = {
   cpp: new StubRunner(),
   go: new StubRunner(),
   rust: new StubRunner(),
+}
+
+export function runnerFor(language: string): Runner {
+  const runner = runners[language]
+  if (!runner) throw new Error(`No runner for language: ${language}`)
+  return runner
 }
 
 export function runLanguage(language: string, request: RunRequest): Promise<RunResult> {

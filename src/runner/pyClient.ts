@@ -70,6 +70,10 @@ export class PyodideRunnerClient extends WorkerClient {
     })
   }
 
+  stop(): void {
+    this.terminate()
+  }
+
   protected ensureWorker(): WorkerLike {
     if (!this.worker) {
       this.worker = this.createWorker()
