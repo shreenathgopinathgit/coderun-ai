@@ -70,7 +70,7 @@ export interface BuildContextResult {
 
 /** The stable system prompt prefix, kept short to save tokens. */
 export const SYSTEM_PROMPT =
-  'You are CodeForge AI, a concise programming tutor. Answer the user\'s question directly, with short code examples. Refer to the user\'s code and question when relevant.'
+  'You are CodeForge AI, a concise programming tutor. Answer the user question directly, with short code examples. Refer to the user code and question when relevant.'
 
 const CODE_HASH_SALT = 'codeforge-ai:v1'
 const CODE_TRUNCATE = 6000

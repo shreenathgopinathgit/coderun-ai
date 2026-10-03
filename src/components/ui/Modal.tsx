@@ -11,11 +11,30 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, width = '640px' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab' || !contentRef.current) return
+      // Focus trap: cycle Tab within the modal's focusable content.
+      const focusables = contentRef.current.querySelectorAll<HTMLElement>(
+        'a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -32,11 +51,18 @@ export function Modal({ open, onClose, title, children, width = '640px' }: Modal
       }}
     >
       <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg-panel)] shadow-xl"
         style={{ width }}
+        tabIndex={-1}
       >
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5">
-          <h2 className="text-sm font-semibold text-[var(--color-text)]">{title}</h2>
+          <h2 id="modal-title" className="text-sm font-semibold text-[var(--color-text)]">
+            {title}
+          </h2>
           <button
             type="button"
             onClick={onClose}

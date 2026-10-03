@@ -11,6 +11,47 @@ export type PersistedState = {
   practice: PracticeState
 }
 
+/**
+ * Merge persisted state back into the current store state. Older localStorage
+ * shapes (missing `practice`, profiles without an `active` flag, or a null
+  * active id pointing at a deleted profile) are normalised here so the app
+  * never crashes on a stale record.
+ */
+export function mergePersisted(
+  persisted: PersistedState,
+  current: AppState,
+): Partial<AppState> {
+  const profiles = Array.isArray(persisted.profiles)
+    ? persisted.profiles
+        .filter((p): p is APIProfile => p && typeof p === 'object')
+        .map((p) => ({
+          id: typeof p.id === 'string' ? p.id : '',
+          name: typeof p.name === 'string' ? p.name : 'Profile',
+          provider: typeof p.provider === 'string' ? p.provider : 'custom',
+          baseUrl: typeof p.baseUrl === 'string' ? p.baseUrl : '',
+          apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
+          model: typeof p.model === 'string' ? p.model : '',
+          active: typeof p.active === 'boolean' ? p.active : false,
+        }))
+    : []
+  const validIds = new Set(profiles.map((p) => p.id))
+  const activeProfileId =
+    persisted.activeProfileId && validIds.has(persisted.activeProfileId)
+      ? persisted.activeProfileId
+      : profiles.find((p) => p.active)?.id ?? null
+  // Ensure the active profile is marked active=true after merge.
+  if (activeProfileId) {
+    profiles.forEach((p) => {
+      p.active = p.id === activeProfileId
+    })
+  }
+  return {
+    profiles,
+    activeProfileId,
+    practice: persisted.practice ?? current.practice,
+  }
+}
+
 const defaultPractice: PracticeState = {
   lastLanguage: 'python',
   paneSizes: { left: 42, right: 58 },
@@ -107,6 +148,10 @@ export const useAppStore = create<AppState>()(
         profiles: state.profiles,
         activeProfileId: state.activeProfileId,
         practice: state.practice,
+      }),
+      merge: (persisted, current) => ({
+        ...(current as AppState),
+        ...mergePersisted(persisted as PersistedState, current as AppState),
       }),
     },
   ),
