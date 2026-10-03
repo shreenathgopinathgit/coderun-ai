@@ -8,6 +8,7 @@ import { CodeEditor } from '../components/practice/CodeEditor'
 import { OutputPanel } from '../components/practice/OutputPanel'
 import { useRunner } from '../runner/useRunner'
 import { starterCode } from '../components/practice/starterCode'
+import { NO_EXECUTOR } from '../runner/executors'
 
 /** Fixed scratch id used for code while no questions exist yet. */
 const SCRATCH_ID = '__scratch__'
@@ -26,39 +27,28 @@ export function PracticePage() {
   const setCode = useAppStore((s) => s.setCode)
   const code = codeByQuestion[SCRATCH_ID]?.[lastLanguage] ?? starterCode[lastLanguage]
 
-  const { state, run, stop, clear, report } = useRunner()
+  const { state, run, stop, clear } = useRunner()
   const isStub = STUB_LANGUAGES.has(lastLanguage)
-
-  const NO_EXECUTOR =
-    'No executor is configured for this language. Configure a Judge0 or Piston compatible endpoint in settings.'
 
   const runCode = (): void => {
     if (state.loading) return
-    // Stub languages have no executor: show the honest message in the
-    // Console tab instead of silently doing nothing.
-    if (isStub) {
-      report(NO_EXECUTOR)
-      return
-    }
+    // Stub languages have no executor: the runner reports the honest message
+    // in the Console tab instead of silently doing nothing.
     run({
       code,
       functionName: 'main',
       cases: [],
-      language: lastLanguage as 'python' | 'javascript' | 'typescript',
+      language: lastLanguage as 'python' | 'javascript' | 'typescript' | 'java' | 'c' | 'cpp' | 'go' | 'rust',
     })
   }
 
   const submitCode = (): void => {
     if (state.loading) return
-    if (isStub) {
-      report(NO_EXECUTOR)
-      return
-    }
     run({
       code,
       functionName: 'main',
       cases: [],
-      language: lastLanguage as 'python' | 'javascript' | 'typescript',
+      language: lastLanguage as 'python' | 'javascript' | 'typescript' | 'java' | 'c' | 'cpp' | 'go' | 'rust',
     })
   }
 
@@ -106,11 +96,7 @@ export function PracticePage() {
                   onAddLibrary={() => undefined}
                   disabled={state.loading}
                   stopDisabled={isStub}
-                  stopTitle={
-                    isStub
-                      ? 'No executor is configured for this language. Configure a Judge0 or Piston compatible endpoint in settings.'
-                      : undefined
-                  }
+                  stopTitle={isStub ? NO_EXECUTOR : undefined}
                   submitDisabled={isStub || state.loading}
                   submitTitle={
                     isStub

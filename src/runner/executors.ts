@@ -2,14 +2,15 @@ import { JSTSWRunnerClient } from './client'
 import { PyodideRunnerClient } from './pyClient'
 import { type Runner, type RunRequest, type RunResult } from './types'
 
-const NO_EXECUTOR = 'No executor is configured for this language. Configure a Judge0 or Piston compatible endpoint in settings.'
+/** Honest message shown in the Console tab for languages without an executor. */
+export const NO_EXECUTOR = 'No executor is configured for this language. Add a Judge0 or Piston compatible endpoint to use it.'
 
-/** Runner that reports an honest "not configured" message. */
+/** Runner that reports an honest "not configured" message in the Console tab. */
 class StubRunner implements Runner {
-  async run(request: RunRequest): Promise<RunResult> {
+  async run(_request: RunRequest): Promise<RunResult> {
     return {
-      cases: request.cases.map(() => ({ passed: false, timeMs: 0, error: NO_EXECUTOR })),
-      consoleOutput: [],
+      cases: [],
+      consoleOutput: [NO_EXECUTOR],
       timeMs: 0,
     }
   }

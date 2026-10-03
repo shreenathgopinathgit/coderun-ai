@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { PyodideRunnerClient } from './pyClient'
-import { runners, runLanguage } from './executors'
+import { runners, runLanguage, NO_EXECUTOR } from './executors'
 
 describe('executor stubs', () => {
   const stubLanguages = ['java', 'c', 'cpp', 'go', 'rust']
@@ -13,8 +13,8 @@ describe('executor stubs', () => {
         cases: [{ args: [], expected: null }],
         language: 'javascript',
       })
-      expect(result.cases[0].passed).toBe(false)
-      expect(result.cases[0].error).toContain('No executor is configured')
+      expect(result.cases).toHaveLength(0)
+      expect(result.consoleOutput).toEqual([NO_EXECUTOR])
     }
   })
 

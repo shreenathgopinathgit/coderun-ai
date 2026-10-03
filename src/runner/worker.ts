@@ -1,6 +1,7 @@
 import { transform } from 'sucrase'
-import { deepEqual } from './deepEqual'
-import { TIME_LIMIT_EXCEEDED, type CaseResult, type RunRequest, type RunResult } from './types'
+import { runCode } from './runCode'
+import { runCase } from './harness'
+import { TIME_LIMIT_EXCEEDED, type CaseResult, type RunRequest, type RunResult, type TestCase } from './types'
 
 interface WorkerMessage {
   id: number
@@ -13,19 +14,7 @@ interface WorkerResponse {
   error?: string
 }
 
-/** Format a console argument for display. */
-function formatArg(arg: unknown): string {
-  if (arg === null) return 'null'
-  if (arg === undefined) return 'undefined'
-  if (typeof arg === 'string') return arg
-  try {
-    return JSON.stringify(arg)
-  } catch {
-    return String(arg)
-  }
-}
-
-/** Run the user's code in a sandbox and execute one case. */
+/** Run the user's code in a sandbox and execute one request. */
 async function runRequest(request: RunRequest): Promise<RunResult> {
   const transpiled =
     request.language === 'typescript'
@@ -36,66 +25,30 @@ async function runRequest(request: RunRequest): Promise<RunResult> {
     .replace(/^\s*export\s+default\s+/, '')
     .replace(/^\s*export\s+/, '')
 
-  const lines: string[] = []
-  // eslint-disable-next-line no-console -- the worker intentionally captures console.log
-  const originalLog = console.log
-  // eslint-disable-next-line no-console
-  console.log = (...args: unknown[]) => {
-    lines.push(args.map(formatArg).join(' '))
+  // No question loaded yet: run the code as a plain script. This is shared
+  // with Python's plain-run path via runCode().
+  if (request.cases.length === 0) {
+    return runCode(request)
   }
 
-  const start = performance.now()
-  try {
-    const fnFactory = new Function(
-      `"use strict";\n${body}\nreturn typeof ${request.functionName} !== "undefined" ? ${request.functionName} : undefined`,
-    )
-    const fn = fnFactory() as ((...args: unknown[]) => unknown) | undefined
-    if (typeof fn !== 'function') {
-      throw new Error(`Function "${request.functionName}" was not defined in the code.`)
-    }
+  const fnFactory = new Function(
+    `"use strict";\n${body}\nreturn typeof ${request.functionName} !== "undefined" ? ${request.functionName} : undefined`,
+  )
+  const fn = fnFactory() as ((...args: unknown[]) => unknown) | undefined
+  if (typeof fn !== 'function') {
+    throw new Error(`Function "${request.functionName}" was not defined in the code.`)
+  }
 
-    const cases: CaseResult[] = []
-    if (request.cases.length === 0) {
-      // No question loaded yet: run the function once so console output and
-      // runtime errors are still captured and reported.
-      const caseStart = performance.now()
-      let actual: unknown
-      let error: string | undefined
-      try {
-        actual = await Reflect.apply(fn, null, [])
-      } catch (e) {
-        error = e instanceof Error ? e.message : String(e)
-      }
-      const timeMs = Math.round(performance.now() - caseStart)
-      cases.push({ passed: false, actual, error, timeMs, hidden: false })
-    } else {
-      for (const tc of request.cases) {
-        const caseStart = performance.now()
-        let actual: unknown
-        let error: string | undefined
-        try {
-          actual = await Reflect.apply(fn, null, tc.args as unknown[])
-        } catch (e) {
-          error = e instanceof Error ? e.message : String(e)
-        }
-        const timeMs = Math.round(performance.now() - caseStart)
-        const passed = !error && deepEqual(actual, tc.expected)
-        cases.push(
-          tc.hidden
-            ? { passed, timeMs, hidden: true }
-            : { passed, actual, error, timeMs, hidden: false },
-        )
-      }
-    }
+  const cases: CaseResult[] = []
+  for (const tc of request.cases) {
+    const r = await runCase(fn as (args: unknown[]) => Promise<unknown>, tc as TestCase<unknown>)
+    cases.push({ ...r, hidden: tc.hidden })
+  }
 
-    return {
-      cases,
-      consoleOutput: lines,
-      timeMs: Math.round(performance.now() - start),
-    }
-  } finally {
-    // eslint-disable-next-line no-console
-    console.log = originalLog
+  return {
+    cases,
+    consoleOutput: [],
+    timeMs: 0,
   }
 }
 
