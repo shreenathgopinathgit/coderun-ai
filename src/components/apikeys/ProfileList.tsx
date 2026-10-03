@@ -45,14 +45,21 @@ export function ProfileList({
                 : 'border-[var(--color-border)] bg-[var(--color-bg-elevated)]'
             }`}
           >
-            <button
-              type="button"
-              onClick={() => onActivate(p.id)}
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-current"
-              aria-label={`Set ${p.name} as active profile`}
-            >
-              {isActive && <Check size={10} className="text-[var(--color-accent)]" />}
-            </button>
+            {isActive ? (
+              <span className="flex h-4 shrink-0 items-center gap-1 rounded-full border border-[var(--color-accent)] bg-[var(--color-accent)] px-1.5 text-[10px] font-semibold text-white">
+                <Check size={9} /> Active
+              </span>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onActivate(p.id)}
+                aria-label={`Set ${p.name} as active profile`}
+                className="h-4 shrink-0 px-1.5 text-[11px]"
+              >
+                Set active
+              </Button>
+            )}
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-[var(--color-text)]">
                 {p.name}

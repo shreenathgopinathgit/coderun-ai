@@ -30,10 +30,11 @@ test('API keys modal: add, fetch models, test connection, activate, persist', as
   await page.getByRole('button', { name: 'Add profile' }).click()
   await expect(page.getByText('Mock server')).toBeVisible()
 
-  // Mark it active and confirm exactly one active profile.
-  await page.getByRole('button', { name: 'Set Mock server as active profile' }).click()
+  // The first saved profile becomes active automatically, so it shows the
+  // Active badge and the accent border without an extra click.
   await expect(page.getByRole('listitem')).toHaveCount(1)
   await expect(page.getByRole('listitem')).toHaveClass(/border-\[var\(--color-accent\)\]/)
+  await expect(page.getByText('Active')).toBeVisible()
 
   // Reload and confirm the profile and active state persist.
   await page.reload()

@@ -78,7 +78,21 @@ describe('profile actions', () => {
     useAppStore.getState().upsertProfile(profile({ id: 'p2', active: true }))
     const s = useAppStore.getState()
     expect(s.activeProfileId).toBe('p2')
-    expect(s.profiles.find((p) => p.id === 'p1')?.active).toBe(false)
+  })
+
+  it('the first saved profile becomes active automatically', () => {
+    useAppStore.getState().upsertProfile(profile({ id: 'p1' }))
+    const s = useAppStore.getState()
+    expect(s.activeProfileId).toBe('p1')
+    expect(s.profiles.find((p) => p.id === 'p1')?.active).toBe(true)
+  })
+
+  it('a second non-active profile does not steal the active slot', () => {
+    useAppStore.getState().upsertProfile(profile({ id: 'p1' }))
+    useAppStore.getState().upsertProfile(profile({ id: 'p2' }))
+    const s = useAppStore.getState()
+    expect(s.activeProfileId).toBe('p1')
+    expect(s.profiles.filter((p) => p.active)).toHaveLength(1)
   })
 })
 
@@ -116,6 +130,26 @@ describe('mergePersisted', () => {
       current,
     )
     expect(merged.activeProfileId).toBe('p1')
+  })
+
+  it('auto-activates the first profile when nothing is marked active', () => {
+    const current = useAppStore.getState()
+    const merged = mergePersisted(
+      {
+        profiles: [
+          { id: 'p1', name: 'A', provider: 'custom', baseUrl: 'https://a', apiKey: 'k', model: 'm' } as APIProfile,
+          { id: 'p2', name: 'B', provider: 'custom', baseUrl: 'https://b', apiKey: 'k', model: 'm' } as APIProfile,
+        ],
+        activeProfileId: null,
+        practice: current.practice,
+        chat: current.chat,
+        lastRun: current.lastRun,
+      },
+      current,
+    )
+    expect(merged.activeProfileId).toBe('p1')
+    expect(merged.profiles![0].active).toBe(true)
+    expect(merged.profiles![1].active).toBe(false)
   })
 
   it('drops non-object entries and keeps practice from the stored state', () => {

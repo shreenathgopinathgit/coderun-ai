@@ -42,7 +42,7 @@ export function MessageList({ messages, streaming }: MessageListProps) {
     <div
       ref={scrollRef}
       onScroll={onScroll}
-      className="flex-1 overflow-auto px-4 py-3"
+      className="flex-1 min-h-0 overflow-y-auto px-4 py-3"
     >
       {messages.length === 0 && !streaming ? (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">

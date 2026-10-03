@@ -17,7 +17,9 @@ async function addAndActivateMockProfile(page: Page, base: string) {
   await page.getByTestId('model-name-input').fill('mock-stream')
 
   await page.getByRole('button', { name: 'Add profile' }).click()
-  await page.getByRole('button', { name: 'Set Mock server as active profile' }).click()
+  // The first saved profile becomes active automatically, so the Ask tab is
+  // usable without an extra "Set active" click.
+  await expect(page.getByRole('listitem')).toHaveClass(/border-\[var\(--color-accent\)\]/)
   await page.getByRole('button', { name: 'Close modal' }).click()
 
   await page.goto('/practice')

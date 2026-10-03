@@ -45,7 +45,7 @@ export function LeftPane({ profile, language, code, lastRun }: LeftPaneProps) {
   const [tab, setTab] = useState<Tab>('ask')
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col min-h-0">
       <div className="flex h-10 items-center border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
         {TABS.map((t) => (
           <button
@@ -64,7 +64,7 @@ export function LeftPane({ profile, language, code, lastRun }: LeftPaneProps) {
         ))}
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex flex-col min-h-0 overflow-hidden">
         {tab === 'ask' ? (
           <ChatPanel
             profile={profile}

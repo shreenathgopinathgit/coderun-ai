@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { AlertTriangle, KeyRound, RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../store/store'
 import { useChat } from './useChat'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { Button } from '../ui/Button'
-import { ApiKeyModal } from '../ApiKeyModal'
 import type { APIProfile } from '../../store/types'
 import type { Language } from '../../store/types'
 import type { RunResult } from '../../runner/types'
@@ -88,24 +87,25 @@ export function ChatPanel({
   lastRun,
   question,
 }: ChatPanelProps) {
-  const apiKeyModalOpen = useAppStore((s) => s.ui.apiKeyModalOpen)
   const setApiKeyModalOpen = useAppStore((s) => s.setApiKeyModalOpen)
   const chat = useChat({ profile, language, code, lastRun, question })
 
-  // Close the API key modal once a profile becomes active.
+  // When the active profile changes from null to a real profile (for example
+  // the user activates one while the modal is open), close the modal so the
+  // chat can start. This only fires on a null -> profile transition, never
+  // while a profile is already active — that is what let the burger menu's
+  // "API Keys" open the modal on a profile that was already active.
+  const prevProfileRef = useRef<APIProfile | null>(null)
   useEffect(() => {
-    if (profile && apiKeyModalOpen) setApiKeyModalOpen(false)
-  }, [profile, apiKeyModalOpen, setApiKeyModalOpen])
+    if (prevProfileRef.current === null && profile) setApiKeyModalOpen(false)
+    prevProfileRef.current = profile
+  }, [profile, setApiKeyModalOpen])
 
   const errorInfo = chat.error ? errorCopy(chat.error.code) : null
 
   return (
     <ChatErrorBoundary>
-      <ApiKeyModal
-        open={apiKeyModalOpen && !profile}
-        onClose={() => setApiKeyModalOpen(false)}
-      />
-      <div className="flex h-full flex-col">
+      <div className="flex h-full min-h-0 flex-col">
         {!profile ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-dim)]">
@@ -126,7 +126,7 @@ export function ChatPanel({
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
               <MessageList messages={chat.messages} streaming={null} />
             </div>
 

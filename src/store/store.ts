@@ -50,7 +50,7 @@ export function mergePersisted(
   const activeProfileId =
     persisted.activeProfileId && validIds.has(persisted.activeProfileId)
       ? persisted.activeProfileId
-      : profiles.find((p) => p.active)?.id ?? null
+      : profiles.find((p) => p.active)?.id ?? profiles[0]?.id ?? null
   // Ensure the active profile is marked active=true after merge.
   if (activeProfileId) {
     profiles.forEach((p) => {
@@ -152,12 +152,20 @@ export const useAppStore = create<AppState>()(
 
       setProfiles: (profiles) => set({ profiles }),
       upsertProfile: (profile) =>
-        set((state) => ({
-          profiles: state.profiles
+        set((state) => {
+          const next = state.profiles
             .filter((p) => p.id !== profile.id)
-            .concat(profile),
-          activeProfileId: profile.active ? profile.id : state.activeProfileId,
-        })),
+            .concat(profile)
+          // The first saved profile becomes active automatically so the Ask
+          // tab is usable as soon as a key exists.
+          const activeId = profile.active
+            ? profile.id
+            : state.activeProfileId ?? next[0]?.id ?? null
+          return {
+            profiles: next.map((p) => ({ ...p, active: p.id === activeId })),
+            activeProfileId: activeId,
+          }
+        }),
       deleteProfile: (id) =>
         set((state) => {
           const next = state.profiles.filter((p) => p.id !== id)
