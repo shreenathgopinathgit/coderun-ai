@@ -47,7 +47,7 @@ test('JS plain script runs with no question loaded and no main error', async ({ 
   await page.locator('select').first().selectOption('javascript')
   await typeInEditor(page, 'console.log("hi")')
   await clickRun(page)
-  await expect(page.getByText('hi')).toBeVisible()
+  await expect(page.getByText('"hi"')).toBeVisible()
   await expect(page.getByText('main')).toHaveCount(0)
 })
 

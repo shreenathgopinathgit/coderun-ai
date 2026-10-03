@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { MessageSquare, FileQuestion, HelpCircle } from 'lucide-react'
+import { MessageSquare, FileQuestion } from 'lucide-react'
+import { ChatPanel } from '../../components/chat/ChatPanel'
+import type { APIProfile } from '../../store/types'
+import type { Language } from '../../store/types'
+import type { RunResult } from '../../runner/types'
 
 type Tab = 'ask' | 'question'
 
@@ -30,7 +34,14 @@ function EmptyState({
   )
 }
 
-export function LeftPane() {
+interface LeftPaneProps {
+  profile: APIProfile | null
+  language: Language
+  code: string
+  lastRun: RunResult | null
+}
+
+export function LeftPane({ profile, language, code, lastRun }: LeftPaneProps) {
   const [tab, setTab] = useState<Tab>('ask')
 
   return (
@@ -53,12 +64,14 @@ export function LeftPane() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden">
         {tab === 'ask' ? (
-          <EmptyState
-            icon={HelpCircle}
-            title="Chat arrives in a later phase"
-            description="Add an API key first. Ask questions, debug code, and generate practice questions in a later phase."
+          <ChatPanel
+            profile={profile}
+            language={language}
+            code={code}
+            lastRun={lastRun}
+            question={null}
           />
         ) : (
           <EmptyState

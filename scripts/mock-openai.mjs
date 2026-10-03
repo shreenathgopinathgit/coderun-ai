@@ -16,12 +16,17 @@ import http from 'node:http'
  *   429        - rate-limits the first request, then streams normally
  *   nostream   - answers with a plain JSON body (no text/event-stream),
  *                forcing the client to fall back to non-streaming
+ *   slow       - like `stream` but each token is delayed so a Stop button
+ *                has time to fire mid-reply
+ *   markdown   - like `stream` but the reply is markdown with a fenced code
+ *                block, used to exercise the chat UI's copy button
  */
 
 export function startMock(mode = 'stream', opts = {}) {
   return new Promise((resolve) => {
     let rateLimited = true
     const retryAfter = opts.retryAfter ?? 1
+    const delay = opts.delay ?? (mode === 'slow' ? 60 : 10)
 
     function sseChunk(text) {
       return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`
@@ -32,7 +37,19 @@ export function startMock(mode = 'stream', opts = {}) {
         'content-type': 'text/event-stream; charset=utf-8',
         'cache-control': 'no-cache',
       })
-      const words = ['Hello', ' from', ' the', ' mock', ' server.']
+      const words =
+        mode === 'markdown'
+          ? // A markdown reply with a fenced code block, used to exercise the
+            // chat UI's copy button against real highlighted output.
+            [
+              'Here is a function.',
+              '\n```js\n',
+              'function hello() {\n',
+              '  return "hi"\n',
+              '}\n',
+              '```\n',
+            ]
+          : ['Hello', ' from', ' the', ' mock', ' server.']
       let i = 0
       const send = () => {
         if (i >= words.length) {
@@ -42,7 +59,7 @@ export function startMock(mode = 'stream', opts = {}) {
         }
         res.write(sseChunk(words[i]))
         i++
-        setTimeout(send, 10)
+        setTimeout(send, delay)
       }
       send()
     }

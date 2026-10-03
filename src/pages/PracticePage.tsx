@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Group, Panel, Separator, type Layout } from 'react-resizable-panels'
 import { useAppStore } from '../store/store'
 import { HeroBackground } from '../components/hero/HeroBackground'
@@ -26,8 +27,13 @@ export function PracticePage() {
   const setLanguage = useAppStore((s) => s.setLanguage)
   const setCode = useAppStore((s) => s.setCode)
   const code = codeByQuestion[SCRATCH_ID]?.[lastLanguage] ?? starterCode[lastLanguage]
+  const activeProfile = useAppStore(
+    (s) => s.profiles.find((p) => p.id === s.activeProfileId) ?? null,
+  )
+  const lastRun = useAppStore((s) => s.lastRun.result)
 
   const { state, run, stop, clear } = useRunner()
+  const setLastRun = useAppStore((s) => s.setLastRun)
   const isStub = STUB_LANGUAGES.has(lastLanguage)
 
   const runCode = (): void => {
@@ -65,6 +71,13 @@ export function PracticePage() {
       output: layout.output ?? editorHeight.output,
     })
 
+  // Keep the last run result in the store so the Ask tab can include it in
+  // the context it sends to the model. This is the only place that calls
+  // the AI: the chat hook sends through buildContext()/sendChatStream().
+  useEffect(() => {
+    if (state.result) setLastRun(state.result)
+  }, [state.result, setLastRun])
+
   return (
     <div className="relative h-screen text-[var(--color-text)]">
       <HeroBackground dim />
@@ -78,7 +91,12 @@ export function PracticePage() {
           >
             <Panel id="left" minSize={MIN_PANE} className="flex flex-col">
               <div className="card" style={{ borderRadius: CARD_RADIUS }}>
-                <LeftPane />
+                <LeftPane
+                  profile={activeProfile}
+                  language={lastLanguage}
+                  code={code}
+                  lastRun={lastRun}
+                />
               </div>
             </Panel>
             <Separator id="pane-divider" className="divider-horizontal">

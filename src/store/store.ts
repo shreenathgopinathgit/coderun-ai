@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { APIProfile, AppState, PracticeState } from './types'
+import type {
+  APIProfile,
+  AppState,
+  ChatMessage,
+  ChatSessionState,
+  LastRunState,
+  PracticeState,
+} from './types'
 
 const LS_KEY = 'codeforge-ai:state'
 
@@ -9,7 +16,12 @@ export type PersistedState = {
   profiles: APIProfile[]
   activeProfileId: string | null
   practice: PracticeState
+  chat: ChatSessionState
+  lastRun: LastRunState
 }
+
+/** Hard cap on stored chat messages so localStorage cannot grow without bound. */
+const MAX_CHAT_MESSAGES = 24
 
 /**
  * Merge persisted state back into the current store state. Older localStorage
@@ -45,10 +57,47 @@ export function mergePersisted(
       p.active = p.id === activeProfileId
     })
   }
+  const chat = mergeChat(persisted.chat, current.chat)
   return {
     profiles,
     activeProfileId,
     practice: persisted.practice ?? current.practice,
+    chat,
+    lastRun: persisted.lastRun ?? current.lastRun,
+  }
+}
+
+/** Normalise a persisted chat session, trimming it to the size cap. */
+function mergeChat(
+  persisted: ChatSessionState | undefined,
+  current: ChatSessionState,
+): ChatSessionState {
+  if (!persisted || typeof persisted !== 'object') return current
+  const messages: ChatMessage[] = Array.isArray(persisted.messages)
+    ? persisted.messages
+        .filter(
+          (m): m is ChatMessage =>
+            m !== null &&
+            typeof m === 'object' &&
+            typeof m.id === 'string' &&
+            (m.role === 'user' || m.role === 'assistant') &&
+            typeof m.content === 'string',
+        )
+        .slice(-MAX_CHAT_MESSAGES)
+        .map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+        }))
+    : []
+  return {
+    messages,
+    includeContext:
+      typeof persisted.includeContext === 'boolean' ? persisted.includeContext : true,
+    lastRequestTokens:
+      typeof persisted.lastRequestTokens === 'number' ? persisted.lastRequestTokens : null,
+    sessionTokens:
+      typeof persisted.sessionTokens === 'number' ? persisted.sessionTokens : 0,
   }
 }
 
@@ -57,6 +106,13 @@ const defaultPractice: PracticeState = {
   paneSizes: { left: 42, right: 58 },
   editorHeight: { editor: 55, output: 45 },
   codeByQuestion: {},
+}
+
+const defaultChat: ChatSessionState = {
+  messages: [],
+  includeContext: true,
+  lastRequestTokens: null,
+  sessionTokens: 0,
 }
 
 const initialState: Omit<
@@ -71,6 +127,12 @@ const initialState: Omit<
   | 'setPaneSizes'
   | 'setEditorHeight'
   | 'setCode'
+  | 'setChatMessages'
+  | 'appendChatMessage'
+  | 'clearChat'
+  | 'setIncludeContext'
+  | 'setChatTokenEstimate'
+  | 'setLastRun'
 > = {
   profiles: [],
   activeProfileId: null,
@@ -79,6 +141,8 @@ const initialState: Omit<
     apiKeyModalOpen: false,
   },
   practice: defaultPractice,
+  chat: defaultChat,
+  lastRun: { result: null },
 }
 
 export const useAppStore = create<AppState>()(
@@ -140,6 +204,31 @@ export const useAppStore = create<AppState>()(
             },
           }
         }),
+
+      // --- Ask tab conversation ---
+
+      setChatMessages: (messages) =>
+        set((state) => ({
+          chat: { ...state.chat, messages: messages.slice(-MAX_CHAT_MESSAGES) },
+        })),
+      appendChatMessage: (message) =>
+        set((state) => {
+          const next = [...state.chat.messages, message].slice(-MAX_CHAT_MESSAGES)
+          return { chat: { ...state.chat, messages: next } }
+        }),
+      clearChat: () =>
+        set((state) => ({
+          chat: { ...state.chat, messages: [], lastRequestTokens: null, sessionTokens: 0 },
+        })),
+      setIncludeContext: (include) =>
+        set((state) => ({ chat: { ...state.chat, includeContext: include } })),
+      setChatTokenEstimate: (lastRequestTokens) =>
+        set((state) => {
+          const sessionTokens =
+            lastRequestTokens !== null ? state.chat.sessionTokens + lastRequestTokens : 0
+          return { chat: { ...state.chat, lastRequestTokens, sessionTokens } }
+        }),
+      setLastRun: (result) => set({ lastRun: { result } }),
     }),
     {
       name: LS_KEY,
@@ -148,6 +237,8 @@ export const useAppStore = create<AppState>()(
         profiles: state.profiles,
         activeProfileId: state.activeProfileId,
         practice: state.practice,
+        chat: state.chat,
+        lastRun: state.lastRun,
       }),
       merge: (persisted, current) => ({
         ...(current as AppState),

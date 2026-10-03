@@ -1,3 +1,5 @@
+import type { RunResult } from '../runner/types'
+
 export type ProviderPreset =
   | 'groq'
   | 'openrouter'
@@ -51,11 +53,36 @@ export interface PracticeState {
   codeByQuestion: Record<string, Record<Language, string>>
 }
 
+/** One message in the Ask tab conversation. */
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/** The last run result, kept in the store so the Ask tab can include it in context. */
+export interface LastRunState {
+  result: RunResult | null
+}
+
+/** The Ask tab conversation state, persisted with a size cap. */
+export interface ChatSessionState {
+  messages: ChatMessage[]
+  /** Whether the current question's code is included in the request context. */
+  includeContext: boolean
+  /** Approximate token count of the assembled context for the last request. */
+  lastRequestTokens: number | null
+  /** Approximate token count of the whole session context. */
+  sessionTokens: number
+}
+
 export interface AppState {
   profiles: APIProfile[]
   activeProfileId: string | null
   ui: UIState
   practice: PracticeState
+  chat: ChatSessionState
+  lastRun: LastRunState
 
   setProfiles: (profiles: APIProfile[]) => void
   upsertProfile: (profile: APIProfile) => void
@@ -68,4 +95,11 @@ export interface AppState {
   setPaneSizes: (sizes: PaneSizes) => void
   setEditorHeight: (height: EditorHeight) => void
   setCode: (questionId: string, language: Language, code: string) => void
+
+  setChatMessages: (messages: ChatMessage[]) => void
+  appendChatMessage: (message: ChatMessage) => void
+  clearChat: () => void
+  setIncludeContext: (include: boolean) => void
+  setChatTokenEstimate: (lastRequestTokens: number | null) => void
+  setLastRun: (result: RunResult | null) => void
 }

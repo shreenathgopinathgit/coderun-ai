@@ -90,6 +90,8 @@ describe('mergePersisted', () => {
         profiles: [{ id: 'p1', name: 'Old', provider: 'custom', baseUrl: 'https://x', apiKey: 'k', model: 'm' } as APIProfile],
         activeProfileId: 'p1',
         practice: current.practice,
+        chat: current.chat,
+        lastRun: current.lastRun,
       },
       current,
     )
@@ -108,6 +110,8 @@ describe('mergePersisted', () => {
         ],
         activeProfileId: 'gone',
         practice: current.practice,
+        chat: current.chat,
+        lastRun: current.lastRun,
       },
       current,
     )
@@ -126,6 +130,8 @@ describe('mergePersisted', () => {
         ] as unknown as APIProfile[],
         activeProfileId: 'p1',
         practice: { lastLanguage: 'python', paneSizes: { left: 30, right: 70 }, editorHeight: { editor: 50, output: 50 }, codeByQuestion: {} },
+        chat: current.chat,
+        lastRun: current.lastRun,
       },
       current,
     )
