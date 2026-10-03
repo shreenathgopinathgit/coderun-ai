@@ -56,3 +56,13 @@ export const PROVIDER_PRESETS: ProviderPresetDef[] = [
 export function getPreset(id: ProviderPreset): ProviderPresetDef {
   return PROVIDER_PRESETS.find((p) => p.id === id) ?? PROVIDER_PRESETS[PROVIDER_PRESETS.length - 1]
 }
+
+/** Trim and validate a base URL. Returns a friendly error or null when OK. */
+export function normalizeBaseUrl(input: string): { ok: true; value: string } | { ok: false; error: string } {
+  const value = input.trim().replace(/\/+$/, '').replace(/\/chat\/completions\/?$/i, '')
+  if (!value) return { ok: false, error: 'Base URL is required.' }
+  if (!/^https:\/\//i.test(value) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(value)) {
+    return { ok: false, error: 'Base URL must start with https:// (or http://localhost for local servers).' }
+  }
+  return { ok: true, value }
+}

@@ -39,6 +39,9 @@ export function ApiKeyModal({ open, onClose }: { open: boolean; onClose: () => v
   const [draft, setDraft] = useState<ProfileDraft>(EMPTY_DRAFT)
   const [error, setError] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(false)
+  // Bumped on every preset change so the ModelPicker resets its fetched
+  // model list and last test result.
+  const [modelResetKey, setModelResetKey] = useState(0)
 
   // Reset the form when the modal transitions from closed to open. This is
   // the React-recommended "derive state during render" pattern, which avoids
@@ -115,8 +118,13 @@ export function ApiKeyModal({ open, onClose }: { open: boolean; onClose: () => v
             {editingId ? 'Edit profile' : 'Add profile'}
           </h3>
           <div key={formKey} className="flex flex-col gap-4">
-            <ProfileForm draft={draft} onChange={setDraft} />
+            <ProfileForm
+              draft={draft}
+              onChange={setDraft}
+              onPresetChange={() => setModelResetKey((k) => k + 1)}
+            />
             <ModelPicker
+              key={modelResetKey}
               draft={draft}
               onModelChange={(model) => setDraft((d) => ({ ...d, model }))}
             />

@@ -11,15 +11,19 @@ import http from 'node:http'
  *   server.close()
  *
  * Modes:
- *   stream     - normal streaming response (text/event-stream)
- *   401        - rejects every request with an auth error
- *   429        - rate-limits the first request, then streams normally
- *   nostream   - answers with a plain JSON body (no text/event-stream),
- *                forcing the client to fall back to non-streaming
- *   slow       - like `stream` but each token is delayed so a Stop button
- *                has time to fire mid-reply
- *   markdown   - like `stream` but the reply is markdown with a fenced code
- *                block, used to exercise the chat UI's copy button
+ *   stream          - normal streaming response (text/event-stream)
+ *   401            - rejects every request with an auth error
+ *   429            - rate-limits the first request, then streams normally
+ *   nostream       - answers with a plain JSON body (no text/event-stream),
+ *                    forcing the client to fall back to non-streaming
+ *   slow           - like `stream` but each token is delayed so a Stop button
+ *                    has time to fire mid-reply
+ *   markdown       - like `stream` but the reply is markdown with a fenced code
+ *                    block, used to exercise the chat UI's copy button
+ *   models         - /models returns a Mistral-shaped list (with
+ *                    capabilities.completion_chat) including one non-chat model
+ *   models-openai  - /models returns an OpenAI-shaped list (no capabilities)
+ *   invalid-model  - chat completions reject the model with a 400
  */
 
 export function startMock(mode = 'stream', opts = {}) {
@@ -69,6 +73,51 @@ export function startMock(mode = 'stream', opts = {}) {
       res.end(JSON.stringify(body))
     }
 
+    function modelsResponse() {
+      // Mistral-shaped: every model carries `capabilities`, and
+      // `completion_chat` marks the ones usable for chat completions.
+      return {
+        object: 'list',
+        data: [
+          {
+            id: 'mistral-small-latest',
+            object: 'model',
+            created: 1_700_000_000,
+            owned_by: 'mistralai',
+            name: 'Mistral Small Latest',
+            description: 'Our flagship small model.',
+            capabilities: {
+              completion_chat: true,
+              function_calling: true,
+              vision: true,
+            },
+          },
+          {
+            id: 'mistral-embed',
+            object: 'model',
+            created: 1_700_000_001,
+            owned_by: 'mistralai',
+            name: 'Mistral Embed',
+            description: 'Text embedding model, not usable for chat.',
+            capabilities: {
+              completion_chat: false,
+            },
+          },
+        ],
+      }
+    }
+
+    function modelsResponseOpenAI() {
+      // OpenAI-shaped: no capabilities at all, every model is usable.
+      return {
+        object: 'list',
+        data: [
+          { id: 'gpt-4o-mini', object: 'model', created: 1_700_000_002, owned_by: 'system' },
+          { id: 'gpt-4o', object: 'model', created: 1_700_000_003, owned_by: 'system' },
+        ],
+      }
+    }
+
     function handleChat(res, streaming = true) {
       if (mode === '401') {
         json(res, { error: { message: 'Invalid API key', type: 'invalid_request_error' } }, 401)
@@ -82,6 +131,17 @@ export function startMock(mode = 'stream', opts = {}) {
           return
         }
         streamResponse(res)
+        return
+      }
+      if (mode === 'invalid-model') {
+        json(res, {
+          error: {
+            message: `Invalid model: ${opts.invalidModel ?? 'llama-3.3-70b-versatile'}`,
+            type: 'invalid_request_error',
+            param: 'model',
+            code: 'model_not_found',
+          },
+        }, 400)
         return
       }
       if (mode === 'nostream' || !streaming) {
@@ -101,7 +161,13 @@ export function startMock(mode = 'stream', opts = {}) {
         return
       }
       if (req.method === 'GET' && req.url?.startsWith('/models')) {
-        json(res, { data: [{ id: 'mock-stream' }, { id: 'mock-chat' }] })
+        if (mode === 'models-401') {
+          json(res, { error: { message: 'Invalid API key', type: 'invalid_request_error' } }, 401)
+          return
+        }
+        if (mode === 'models') json(res, modelsResponse())
+        else if (mode === 'models-openai') json(res, modelsResponseOpenAI())
+        else json(res, { data: [{ id: 'mock-stream' }, { id: 'mock-chat' }] })
         return
       }
       if (req.method === 'POST' && req.url?.startsWith('/chat/completions')) {

@@ -50,17 +50,33 @@ export async function postChat(
     throw chatError('rate_limit', `Rate limit reached (429).${suffix}`)
   }
   if (!response.ok) {
-    const text = await readErrorBody(response)
-    throw chatError('server', `Provider returned ${response.status}: ${text}`)
+    const message = await providerErrorMessage(response, response.status)
+    throw chatError('server', message)
   }
   return response
 }
 
-async function readErrorBody(response: Response): Promise<string> {
+/**
+ * Read a non-OK response body. OpenAI-style providers return
+ * `{ error: { message, type, param, code } }`; the message is what the user
+ * should see. Anything else falls back to the raw text.
+ */
+async function providerErrorMessage(response: Response, status: number): Promise<string> {
   try {
     const text = await response.text()
+    if (!text) return `Provider returned ${status}.`
+    try {
+      const json = JSON.parse(text) as {
+        error?: { message?: string }
+        message?: string
+      }
+      const message = json?.error?.message ?? json?.message
+      if (typeof message === 'string' && message.trim()) return message
+    } catch {
+      /* not JSON — fall back to the raw text */
+    }
     return text.slice(0, 300)
   } catch {
-    return ''
+    return `Provider returned ${status}.`
   }
 }

@@ -14,25 +14,55 @@ export interface ProfileDraft {
 interface ProfileFormProps {
   draft: ProfileDraft
   onChange: (draft: ProfileDraft) => void
+  /** Called when a preset change should clear the fetched model list and test result. */
+  onPresetChange?: () => void
 }
 
 /**
  * The fields of one API profile. No buttons, no fetching — the parent owns
  * save/cancel and the model/connection actions.
  */
-export function ProfileForm({ draft, onChange }: ProfileFormProps) {
+export function ProfileForm({ draft, onChange, onPresetChange }: ProfileFormProps) {
   const [showKey, setShowKey] = useState(false)
-
-  const set = <K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) =>
-    onChange({ ...draft, [key]: value })
+  // Tracks whether the user has typed into the profile name. When a preset
+  // changes, the name is only filled from the preset's default if it is empty
+  // or still carries the previous preset's default name.
+  const [nameEdited, setNameEdited] = useState(false)
+  const [lastPresetName, setLastPresetName] = useState<string | null>(null)
 
   const onProviderChange = (provider: ProviderPreset) => {
+    // Build the whole next draft once. Spreading the stale `draft` per-field
+    // would clobber earlier fields on the next onChange call.
     const preset = getPreset(provider)
-    set('provider', provider)
+    const next: ProfileDraft = { ...draft, provider }
     if (provider !== 'custom') {
-      set('baseUrl', preset.baseUrl)
-      if (!draft.model) set('model', preset.defaultModel)
+      next.baseUrl = preset.baseUrl
+      next.model = preset.defaultModel
+      if (!nameEdited || !draft.name || draft.name === lastPresetName) {
+        next.name = preset.label
+        setLastPresetName(preset.label)
+      }
+    } else {
+      setLastPresetName(null)
     }
+    onChange(next)
+    onPresetChange?.()
+  }
+
+  const onBaseUrlChange = (raw: string) => {
+    const preset = getPreset(draft.provider)
+    const next: ProfileDraft = { ...draft, baseUrl: raw }
+    // If the user edits the base URL away from the preset's URL, switch to
+    // Custom so the provider dropdown reflects the draft's provider.
+    if (preset.id !== 'custom' && raw.trim().replace(/\/+$/, '') !== preset.baseUrl) {
+      next.provider = 'custom'
+    }
+    onChange(next)
+  }
+
+  const onNameChange = (value: string) => {
+    onChange({ ...draft, name: value })
+    setNameEdited(true)
   }
 
   return (
@@ -45,7 +75,7 @@ export function ProfileForm({ draft, onChange }: ProfileFormProps) {
           id="profile-name"
           type="text"
           value={draft.name}
-          onChange={(e) => set('name', e.target.value)}
+          onChange={(e) => onNameChange(e.target.value)}
           placeholder="Groq (free)"
           className="input"
         />
@@ -77,7 +107,7 @@ export function ProfileForm({ draft, onChange }: ProfileFormProps) {
           id="base-url"
           type="text"
           value={draft.baseUrl}
-          onChange={(e) => set('baseUrl', e.target.value)}
+          onChange={(e) => onBaseUrlChange(e.target.value)}
           placeholder="https://api.groq.com/openai/v1"
           className="input"
         />
@@ -96,7 +126,7 @@ export function ProfileForm({ draft, onChange }: ProfileFormProps) {
             data-testid="api-key-input"
             type={showKey ? 'text' : 'password'}
             value={draft.apiKey}
-            onChange={(e) => set('apiKey', e.target.value)}
+            onChange={(e) => onChange({ ...draft, apiKey: e.target.value })}
             placeholder="sk-..."
             className="input pr-9"
             autoComplete="off"
@@ -110,21 +140,6 @@ export function ProfileForm({ draft, onChange }: ProfileFormProps) {
             {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </div>
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--color-text-dim)]">
-          Model name
-        </span>
-        <input
-          id="model-name"
-          data-testid="model-name-input"
-          type="text"
-          value={draft.model}
-          onChange={(e) => set('model', e.target.value)}
-          placeholder="llama-3.3-70b-versatile"
-          className="input"
-        />
       </label>
     </div>
   )
